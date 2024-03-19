@@ -16,7 +16,7 @@ class Server:
         self.client_gradients = client_gradients  # List of gradients from clients
         self.C = len(client_gradients)
         self.phi = cp.Variable(self.client_gradients[0].shape[0])
-        print(self.client_gradients[0].shape[0])
+
 
     def update_vector(self):
         C = self.C

@@ -1,3 +1,4 @@
+import numpy as np
 from torch.optim import optimizer
 import torch
 import torch.nn as nn
@@ -27,7 +28,7 @@ class Client:
         else:
             raise ValueError(" The main loss is not supported!")
 
-    def train(self, lock, global_gradients,lambda_d,lambda_m,lambda_a):
+    def train(self, global_gradients,lambda_d,lambda_m):
         for data, target in self.data_loader:
 
             self.optimizer.zero_grad()
@@ -68,8 +69,10 @@ class Client:
                 self.optimizerF.step()
 
 
+    def get_gradient_vector(self):
+        LUD = self.model.rnn_cell.ff1[-1].weight.grad.clone()
+        return LUD,np.linalg.norm(LUD)
 
+    def save_model(self, filepath):
+        torch.save(self.model.state_dict(), filepath)
 
-            # Update the global gradients list
-            with lock:
-                global_gradients[self.client_id] = self.model.rnn_cell.ff1[-1].weight.grad.clone()

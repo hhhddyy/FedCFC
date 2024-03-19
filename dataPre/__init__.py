@@ -11,7 +11,7 @@ data_dict = {"ucihar": UCI_HAR_DATA,}
 
 
 class data_set(Dataset):
-    def __init__(self, args, dataset, flag):
+    def __init__(self, args, dataset, flag,filterLabel=None):
         """
         args : a dict , In addition to the parameters for building the model, the parameters for reading the data are also in here
         dataset : It should be implmented dataset object, it contarins train_x, train_y, vali_x,vali_y,test_x,test_y
@@ -22,6 +22,17 @@ class data_set(Dataset):
 
         self.data_x = dataset.normalized_data_x
         self.data_y = dataset.data_y
+
+        if filterLabel != None:
+            # Filter the Y DataFrame to only include desired labels
+            self.data_y  = self.data_y [self.data_y["activity_id"].isin(filterLabel)]
+
+            # Use the index of the filtered Y to filter X
+            self.data_x = self.data_x.loc[self.data_y.index]
+            # drop some data
+            self.data_x = self.data_x.sample(frac=0.8, random_state=1)
+            self.data_y = self.data_y.loc[self.data_x.index]
+
         self.slidingwindows = dataset.slidingwindows
         self.act_weights = dataset.act_weights
 

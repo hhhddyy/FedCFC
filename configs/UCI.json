@@ -1,0 +1,11 @@
+{
+  "name":"ucihar",
+  "difference": true,
+  "sp": 50,
+  "t_v_s": 0.95,
+  "drop_long": false,
+  "inputSize": 9,
+  "hiddenSize": 64,
+  "outF": 6,
+  "maxLabel": 6
+}
