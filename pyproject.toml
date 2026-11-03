@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "fedcfc"
 version = "0.1.0"
 description = "Single-machine PyTorch implementation of FedCFC-fBind"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24",
@@ -14,6 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 solver = ["cvxpy>=1.6,<2", "scs>=3.2.7,<4"]
+mnist = ["torchvision>=0.16"]
 
 [tool.setuptools.packages.find]
 include = ["fedcfc*"]

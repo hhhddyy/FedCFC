@@ -1,10 +1,12 @@
 /*
 !/.gitignore
+!/README.md
 !/pyproject.toml
 !/requirements.txt
 !/train_uci_har.py
 !/evaluate_uci_har.py
+!/train_seq_mnist.py
+!/evaluate_seq_mnist.py
 !/fedcfc/
 /fedcfc/*
 !/fedcfc/*.py
-!/README.md

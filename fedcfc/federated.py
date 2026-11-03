@@ -72,6 +72,12 @@ class FedCFCClient:
             self.model.parameters(), lr=self.config.learning_rate
         )
 
+    def _check_gradients(self) -> None:
+        finite = [torch.isfinite(parameter.grad).all() for parameter in self.model.parameters()
+                  if parameter.grad is not None]
+        if finite and not torch.stack(finite).all():
+            raise FloatingPointError("client produced non-finite gradients before the optimizer update")
+
     def train_batch(
         self,
         inputs: Tensor,
@@ -103,6 +109,7 @@ class FedCFCClient:
                 nn.utils.clip_grad_norm_(
                     self.model.parameters(), self.config.gradient_clip_norm
                 )
+            self._check_gradients()
             self.optimizer.step()
             return ClientStepResult(
                 task_loss=float(task_loss.detach()),
@@ -208,6 +215,7 @@ class FedCFCClient:
         uploaded_gradient = communicated_parameter.grad.detach().clone().cpu()
         if not torch.isfinite(uploaded_gradient).all():
             raise FloatingPointError("client produced a non-finite local update")
+        self._check_gradients()
         self.optimizer.step()
 
         accuracy = (logits.argmax(dim=1) == targets).float().mean()

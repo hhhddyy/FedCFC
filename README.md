@@ -64,6 +64,7 @@ Training parameters:
 | `--lr-scheduler` | `none` | `none`: constant rate; `cosine`: decay over the configured rounds. |
 | `--min-learning-rate` | `0.0` | Cosine decay floor; ignored when scheduling is disabled. |
 | `--pooling` | `last` | Classify the final hidden state (`last`) or the average hidden state across timesteps (`mean`). |
+| `--bptt-steps` | `0` | Stop recurrent gradients every N timesteps; `0` uses full backpropagation. Forward state persists across boundaries. |
 | `--seed` | `7` | Random seed for initialization, partitioning, and sampling. |
 | `--eval-every` | `5` | Evaluation interval in rounds; first and final rounds are also evaluated. |
 | `--save-every` | `5` | Checkpoint interval in rounds; the final round is always saved. |
@@ -90,3 +91,59 @@ Evaluation also accepts `--data-dir`, `--download`, and `--device` as defined ab
 The report includes per-client accuracy, loss, class recall, and confusion
 matrices, plus mean accuracy and loss. Model settings and normalization are
 loaded from the checkpoint.
+
+Install MNIST support for the CUDA environment above:
+
+```bash
+pip install torchvision==0.24.1 --index-url https://download.pytorch.org/whl/cu130
+```
+
+Train one model on sequential MNIST:
+
+```bash
+python train_seq_mnist.py \
+  --download --device cuda:0 --training-mode local \
+  --clients 1 --partition iid --sequence-mode rows --bounded no \
+  --optimizer adam --learning-rate 0.001 --lr-scheduler cosine \
+  --min-learning-rate 0.00001 --pooling mean --batch-size 64 \
+  --rounds 30 --steps-per-round 938 --eval-every 1 \
+  --output-dir runs/mnist-local --save-every 5
+```
+
+Train federated MNIST models:
+
+```bash
+python train_seq_mnist.py \
+  --download --device cuda:0 --training-mode federated \
+  --clients 6 --partition dirichlet --dirichlet-alpha 0.3 \
+  --sequence-mode rows --bounded no --optimizer adam --learning-rate 0.001 \
+  --lr-scheduler cosine --min-learning-rate 0.00001 --pooling mean \
+  --rounds 100 --steps-per-round 5 --output-dir runs/mnist-federated
+```
+
+MNIST accepts the training parameters above and adds:
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `--sequence-mode` | `rows` | `rows`: 28 timesteps with 28 features; `pixels`: the standard 784-timestep pixel sequence with one feature. Both scan left-to-right, top-to-bottom, without permutation. |
+
+Pixels are divided by 255. The timestep is 1 sequence unit, not a physical time.
+The official 60,000 training images are partitioned among clients; all clients
+are evaluated on the official 10,000 test images. For one client and batch size
+64, 938 steps cover one epoch. Pixel sequences take substantially longer than rows.
+
+For pixel-wise training, replace `--sequence-mode rows` with
+`--sequence-mode pixels --bptt-steps 32`. Full 784-step backpropagation produced
+non-finite gradients in CUDA checks. Truncation limits gradient propagation
+across timesteps; it does not reset the hidden state or shorten the input sequence.
+
+Evaluate a MNIST checkpoint:
+
+```bash
+python evaluate_seq_mnist.py \
+  --checkpoint runs/mnist-local/final.pt --device cuda:0 \
+  --output runs/mnist-local/test-metrics.json
+```
+
+The evaluation options match those above. Sequence format and preprocessing
+come from the checkpoint; no sequence-format argument is needed for evaluation.

@@ -122,11 +122,15 @@ class FedCFCClassifier(nn.Module):
         activation: str = "lecun",
         bounded_f: bool = True,
         pooling: str = "last",
+        bptt_steps: int = 0,
     ) -> None:
         super().__init__()
         if pooling not in ("last", "mean"):
             raise ValueError("pooling must be 'last' or 'mean'")
+        if not isinstance(bptt_steps, int) or bptt_steps < 0:
+            raise ValueError("bptt_steps must be a non-negative integer")
         self.pooling = pooling
+        self.bptt_steps = bptt_steps
         self.hidden_size = hidden_size
         self.cell = FedCfCCell(
             input_size,
@@ -156,6 +160,8 @@ class FedCFCClassifier(nn.Module):
         hidden_states: list[Tensor] = []
         layer_activations: list[list[Tensor]] = [[], []]
         for step in range(sequence_length):
+            if self.training and self.bptt_steps and step and step % self.bptt_steps == 0:
+                hidden = hidden.detach()
             hidden, activations = self.cell(
                 inputs[:, step], hidden, timespans[:, step]
             )
